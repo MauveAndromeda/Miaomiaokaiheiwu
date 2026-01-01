@@ -23,7 +23,13 @@ export function Recharge() {
     navigateTo('wallet');
   };
 
-  const paymentMethods = [
+  type RechargePaymentType = 'wechat' | 'alipay';
+
+  const paymentMethods: Array<{
+    id: RechargePaymentType;
+    name: string;
+    icon: React.ReactNode;
+  }> = [
     {
       id: 'wechat',
       name: '微信支付',
@@ -82,7 +88,7 @@ export function Recharge() {
                       ? 'border-primary bg-primary/5'
                       : 'border-border bg-surface-light'
                   }`}
-                  onClick={() => setPaymentMethod(method.id as any)}
+                  onClick={() => setPaymentMethod(method.id)}
                 >
                   <div className="flex items-center gap-3">
                     {method.icon}

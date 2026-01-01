@@ -155,7 +155,19 @@ export const userApi = {
   // 登录
   async login(phone: string, code: string): Promise<ApiResponse<User>> {
     await delay(500);
-    if (code !== '123456') {
+    // TODO: 接入真实短信验证服务 (阿里云SMS / 腾讯云SMS)
+    // 生产环境必须验证真实验证码
+    const isDev = process.env.NODE_ENV === 'development';
+    const validCode = isDev ? '123456' : null; // 生产环境不允许固定验证码
+
+    if (!isDev) {
+      // 生产环境：调用真实验证码验证API
+      // const verified = await smsService.verifyCode(phone, code);
+      // if (!verified) return { success: false, error: '验证码错误' };
+      return { success: false, error: '验证服务未配置' };
+    }
+
+    if (code !== validCode) {
       return { success: false, error: '验证码错误' };
     }
     return { success: true, data: defaultUser, message: '登录成功' };

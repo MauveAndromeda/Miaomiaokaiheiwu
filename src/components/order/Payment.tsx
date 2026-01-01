@@ -51,7 +51,15 @@ export function Payment() {
     navigateTo('order-detail', { orderId: order.id });
   };
 
-  const paymentMethods = [
+  type PaymentMethodType = 'balance' | 'wechat' | 'alipay';
+
+  const paymentMethods: Array<{
+    id: PaymentMethodType;
+    name: string;
+    icon: React.ReactNode;
+    extra: string;
+    disabled: boolean;
+  }> = [
     {
       id: 'balance',
       name: '余额支付',
@@ -122,7 +130,7 @@ export function Payment() {
                       ? 'border-primary bg-primary/5'
                       : 'border-border bg-surface-light'
                   }`}
-                  onClick={() => setPaymentMethod(method.id as any)}
+                  onClick={() => setPaymentMethod(method.id)}
                   disabled={method.disabled}
                 >
                   <div className="flex items-center gap-3">
