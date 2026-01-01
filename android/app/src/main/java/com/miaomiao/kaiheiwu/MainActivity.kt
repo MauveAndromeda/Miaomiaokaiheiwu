@@ -57,6 +57,9 @@ class MainActivity : AppCompatActivity() {
         // 初始化原生桥接
         nativeBridge = NativeBridge(this, webView)
 
+        // 添加JavaScript接口（必须在nativeBridge初始化后）
+        webView.addJavascriptInterface(nativeBridge, "NativeBridge")
+
         // 检查网络并加载
         checkNetworkAndLoad()
     }
@@ -148,9 +151,6 @@ class MainActivity : AppCompatActivity() {
             // 文本缩放
             textZoom = 100
         }
-
-        // 添加JavaScript接口
-        webView.addJavascriptInterface(nativeBridge, "NativeBridge")
 
         // 设置WebViewClient
         webView.webViewClient = object : WebViewClient() {
@@ -277,8 +277,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadWebApp() {
-        // 加载本地或远程页面
-        webView.loadUrl("file:///android_asset/web/index.html")
+        // 加载本地静态页面（由Next.js导出到assets目录）
+        webView.loadUrl("file:///android_asset/index.html")
     }
 
     private fun showErrorPage() {
