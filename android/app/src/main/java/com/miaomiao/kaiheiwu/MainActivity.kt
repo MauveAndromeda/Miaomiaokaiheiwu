@@ -130,9 +130,12 @@ class MainActivity : AppCompatActivity() {
 
             // 媒体设置
             mediaPlaybackRequiresUserGesture = false
-            // 安全加固：限制文件访问权限
-            allowFileAccess = false // 禁止访问本地文件系统
+            // 文件访问设置：允许访问assets目录（本地HTML需要）
+            allowFileAccess = true // 允许file://协议加载assets
             allowContentAccess = false // 禁止访问Content Provider
+            // 安全加固：禁止从file://访问其他来源
+            allowFileAccessFromFileURLs = false
+            allowUniversalAccessFromFileURLs = false
 
             // 缩放设置
             setSupportZoom(false)
