@@ -119,7 +119,7 @@ class MainActivity : AppCompatActivity() {
         webView.settings.apply {
             // JavaScript设置
             javaScriptEnabled = true
-            javaScriptCanOpenWindowsAutomatically = true
+            javaScriptCanOpenWindowsAutomatically = false // 安全加固：禁止JS自动打开窗口
 
             // DOM存储
             domStorageEnabled = true
@@ -130,8 +130,9 @@ class MainActivity : AppCompatActivity() {
 
             // 媒体设置
             mediaPlaybackRequiresUserGesture = false
-            allowFileAccess = true
-            allowContentAccess = true
+            // 安全加固：限制文件访问权限
+            allowFileAccess = false // 禁止访问本地文件系统
+            allowContentAccess = false // 禁止访问Content Provider
 
             // 缩放设置
             setSupportZoom(false)
@@ -142,8 +143,8 @@ class MainActivity : AppCompatActivity() {
             useWideViewPort = true
             loadWithOverviewMode = true
 
-            // 混合内容
-            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+            // 安全加固：禁止混合内容（HTTPS页面不能加载HTTP资源）
+            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
 
             // 用户代理
             userAgentString = "$userAgentString MiaomiaoApp/${BuildConfig.VERSION_NAME}"
