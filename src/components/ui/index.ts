@@ -8,6 +8,7 @@ export * from './Badge';
 export * from './Loading';
 export * from './Rating';
 export * from './PageTransition';
+export * from './PullToRefresh';
 
 // ErrorBoundary - 具名导出避免冲突
 export { ErrorBoundary, ErrorFallback, NetworkError } from './ErrorBoundary';

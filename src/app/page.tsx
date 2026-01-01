@@ -1,7 +1,8 @@
 'use client';
 
+import { useMemo } from 'react';
 import { AppProvider, useApp } from '@/context/AppContext';
-import { Toast } from '@/components/ui';
+import { Toast, ErrorBoundary, PageTransition } from '@/components/ui';
 import { TabBar } from '@/components/layout';
 
 // Auth
@@ -21,6 +22,9 @@ import { Wallet, Recharge, VIP } from '@/components/wallet';
 import { AIAnalysis, AIReport } from '@/components/ai';
 import { Search } from '@/components/search';
 
+// Tab页面列表
+const tabPages = ['home', 'discover', 'live', 'messages', 'profile'];
+
 function AppContent() {
   const { currentPage, isLoggedIn, hasSeenOnboarding } = useApp();
 
@@ -34,9 +38,21 @@ function AppContent() {
     return <Login />;
   }
 
-  // 需要显示TabBar的页面
-  const tabPages = ['home', 'discover', 'live', 'messages', 'profile'];
   const showTabBar = tabPages.includes(currentPage);
+
+  // 页面配置：决定过渡动画类型
+  const pageConfig = useMemo(() => {
+    // Tab页面使用快速淡入淡出
+    if (tabPages.includes(currentPage)) {
+      return { animation: 'fade' as const, duration: 150 };
+    }
+    // 弹窗类页面使用从下往上滑动
+    if (['chat', 'voice-call', 'video-call', 'live-room'].includes(currentPage)) {
+      return { animation: 'slideUp' as const, duration: 300 };
+    }
+    // 其他页面使用从右往左滑动
+    return { animation: 'slideLeft' as const, duration: 250 };
+  }, [currentPage]);
 
   const renderPage = () => {
     switch (currentPage) {
@@ -106,11 +122,17 @@ function AppContent() {
   };
 
   return (
-    <>
-      {renderPage()}
+    <ErrorBoundary>
+      <PageTransition
+        pageKey={currentPage}
+        animation={pageConfig.animation}
+        duration={pageConfig.duration}
+      >
+        {renderPage()}
+      </PageTransition>
       {showTabBar && <TabBar />}
       <Toast />
-    </>
+    </ErrorBoundary>
   );
 }
 

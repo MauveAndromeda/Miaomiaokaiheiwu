@@ -1,20 +1,101 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
 interface PageTransitionProps {
   children: React.ReactNode;
   className?: string;
 }
 
+// 延迟加载的子组件包装器
+interface FadeSlideInProps extends PageTransitionProps {
+  delay?: number;
+}
+
+// 页面级别过渡动画
+type PageAnimationType = 'fade' | 'slideLeft' | 'slideRight' | 'slideUp' | 'slideDown' | 'scale' | 'none';
+
+interface PageTransitionWrapperProps {
+  children: React.ReactNode;
+  pageKey: string;
+  animation?: PageAnimationType;
+  duration?: number;
+  className?: string;
+}
+
+export function PageTransition({
+  children,
+  pageKey,
+  animation = 'fade',
+  duration = 200,
+  className = '',
+}: PageTransitionWrapperProps) {
+  const [displayChildren, setDisplayChildren] = useState(children);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const prevKeyRef = useRef(pageKey);
+
+  useEffect(() => {
+    if (pageKey !== prevKeyRef.current) {
+      setIsAnimating(true);
+      prevKeyRef.current = pageKey;
+
+      // 短暂延迟后更新内容
+      const timer = setTimeout(() => {
+        setDisplayChildren(children);
+        setIsAnimating(false);
+      }, duration / 2);
+
+      return () => clearTimeout(timer);
+    } else {
+      setDisplayChildren(children);
+    }
+  }, [children, pageKey, duration]);
+
+  const getAnimationClasses = () => {
+    const baseTransition = `transition-all ease-out`;
+    const durationClass = `duration-[${duration}ms]`;
+
+    if (!isAnimating) {
+      return `${baseTransition} ${durationClass} opacity-100 translate-x-0 translate-y-0 scale-100`;
+    }
+
+    switch (animation) {
+      case 'slideLeft':
+        return `${baseTransition} ${durationClass} opacity-0 translate-x-4`;
+      case 'slideRight':
+        return `${baseTransition} ${durationClass} opacity-0 -translate-x-4`;
+      case 'slideUp':
+        return `${baseTransition} ${durationClass} opacity-0 translate-y-4`;
+      case 'slideDown':
+        return `${baseTransition} ${durationClass} opacity-0 -translate-y-4`;
+      case 'scale':
+        return `${baseTransition} ${durationClass} opacity-0 scale-95`;
+      case 'none':
+        return '';
+      case 'fade':
+      default:
+        return `${baseTransition} ${durationClass} opacity-0`;
+    }
+  };
+
+  return (
+    <div
+      className={`${getAnimationClasses()} ${className}`}
+      style={{ transitionDuration: `${duration}ms` }}
+    >
+      {displayChildren}
+    </div>
+  );
+}
+
 // 淡入滑动动画
-export function FadeSlideIn({ children, className = '' }: PageTransitionProps) {
+export function FadeSlideIn({ children, className = '', delay = 0 }: FadeSlideInProps) {
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setIsVisible(true), 10);
+    const timer = setTimeout(() => setIsVisible(true), delay + 10);
     return () => clearTimeout(timer);
-  }, []);
+  }, [delay]);
 
   return (
     <div
