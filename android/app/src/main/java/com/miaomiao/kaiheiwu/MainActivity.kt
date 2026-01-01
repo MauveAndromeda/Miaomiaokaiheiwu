@@ -269,16 +269,63 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkNetworkAndLoad() {
-        if (NetworkUtils.isNetworkAvailable(this)) {
-            loadWebApp()
-        } else {
-            showErrorPage()
-        }
+        // 直接加载本地页面，不检查网络（本地assets不需要网络）
+        loadWebApp()
     }
 
     private fun loadWebApp() {
         // 加载本地静态页面（由Next.js导出到assets目录）
-        webView.loadUrl("file:///android_asset/index.html")
+        // 如果assets中没有index.html，显示错误页面
+        try {
+            val assetManager = assets
+            val files = assetManager.list("") ?: emptyArray()
+            if (files.contains("index.html")) {
+                webView.loadUrl("file:///android_asset/index.html")
+            } else {
+                // assets中没有web文件，显示提示
+                showAssetMissingPage()
+            }
+        } catch (e: Exception) {
+            showAssetMissingPage()
+        }
+    }
+
+    private fun showAssetMissingPage() {
+        val html = """
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    body {
+                        font-family: system-ui, sans-serif;
+                        background: linear-gradient(135deg, #0a0a0f, #1a1a2e);
+                        min-height: 100vh;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        color: #fff;
+                        margin: 0;
+                        text-align: center;
+                        padding: 20px;
+                    }
+                    .container { max-width: 300px; }
+                    .icon { font-size: 64px; margin-bottom: 20px; }
+                    h1 { font-size: 20px; margin-bottom: 10px; }
+                    p { color: #999; font-size: 14px; line-height: 1.6; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="icon">🐱</div>
+                    <h1>喵喵开黑屋</h1>
+                    <p>Web资源加载中...<br>如持续显示此页面，请重新安装应用</p>
+                </div>
+            </body>
+            </html>
+        """.trimIndent()
+        webView.loadDataWithBaseURL(null, html, "text/html", "UTF-8", null)
     }
 
     private fun showErrorPage() {

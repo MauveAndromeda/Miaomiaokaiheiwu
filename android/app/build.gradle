@@ -59,15 +59,15 @@ android {
         abortOnError false
     }
 
-    // 分包配置
-    splits {
-        abi {
-            enable true
-            reset()
-            include 'armeabi-v7a', 'arm64-v8a'
-            universalApk true
-        }
-    }
+    // 禁用ABI分包，生成单一APK
+    // splits {
+    //     abi {
+    //         enable true
+    //         reset()
+    //         include 'armeabi-v7a', 'arm64-v8a'
+    //         universalApk true
+    //     }
+    // }
 }
 
 dependencies {
