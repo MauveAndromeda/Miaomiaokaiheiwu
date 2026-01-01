@@ -1,0 +1,78 @@
+version: '3.8'
+
+services:
+  # API服务
+  api:
+    build: .
+    container_name: miaomiao-api
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - DATABASE_URL=mysql://miaomiao:password@mysql:3306/miaomiao
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - miaomiao-network
+    volumes:
+      - ./logs:/app/logs
+      - ./certs:/app/certs:ro
+
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: miaomiao-mysql
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=miaomiao
+      - MYSQL_USER=miaomiao
+      - MYSQL_PASSWORD=password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    networks:
+      - miaomiao-network
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # Redis缓存
+  redis:
+    image: redis:7-alpine
+    container_name: miaomiao-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - miaomiao-network
+    command: redis-server --appendonly yes
+
+  # Nginx反向代理 (可选)
+  nginx:
+    image: nginx:alpine
+    container_name: miaomiao-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - api
+    networks:
+      - miaomiao-network
+
+networks:
+  miaomiao-network:
+    driver: bridge
+
+volumes:
+  mysql-data:
+  redis-data:

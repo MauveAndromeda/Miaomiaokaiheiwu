@@ -1,0 +1,289 @@
+// ========================================
+// 喵喵开黑屋 - 数据库模型
+// 使用 Prisma ORM，支持 SQLite/MySQL/PostgreSQL
+// ========================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite" // 生产环境改为 "mysql" 或 "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== 用户相关 ====================
+
+model User {
+  id            String    @id @default(uuid())
+  phone         String    @unique
+  nickname      String
+  avatar        String?
+  gender        String    @default("unknown") // male, female, unknown
+  birthday      DateTime?
+  bio           String?
+  level         Int       @default(1)
+  experience    Int       @default(0)
+  balance       Int       @default(0) // 钻石余额
+  isVip         Boolean   @default(false)
+  vipExpireAt   DateTime?
+  isCoach       Boolean   @default(false)
+  status        String    @default("active") // active, banned, deleted
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  lastLoginAt   DateTime?
+  lastLoginIp   String?
+
+  // 关联
+  coachProfile  CoachProfile?
+  orders        Order[]       @relation("UserOrders")
+  coachOrders   Order[]       @relation("CoachOrders")
+  favorites     Favorite[]
+  reviews       Review[]      @relation("UserReviews")
+  receivedReviews Review[]    @relation("CoachReviews")
+  transactions  Transaction[]
+  sentMessages  Message[]     @relation("SentMessages")
+  receivedMessages Message[]  @relation("ReceivedMessages")
+  devices       UserDevice[]
+
+  @@index([phone])
+  @@index([isCoach])
+}
+
+model UserDevice {
+  id          String   @id @default(uuid())
+  userId      String
+  deviceId    String
+  platform    String   // android, ios, web
+  pushToken   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, deviceId])
+}
+
+// ==================== 教练相关 ====================
+
+model CoachProfile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  realName        String?
+  idCard          String?
+  isVerified      Boolean  @default(false)
+  verifiedAt      DateTime?
+  rating          Float    @default(5.0)
+  totalOrders     Int      @default(0)
+  completedOrders Int      @default(0)
+  totalEarnings   Int      @default(0)
+  responseRate    Float    @default(100)
+  acceptRate      Float    @default(100)
+  onlineStatus    String   @default("offline") // online, busy, offline
+  isAccepting     Boolean  @default(true)
+  sortOrder       Int      @default(0)
+  tags            String?  // JSON array: ["女神", "声优", "秒回"]
+  images          String?  // JSON array of image URLs
+  voiceIntro      String?  // 语音介绍URL
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id])
+  services        CoachService[]
+  games           CoachGame[]
+
+  @@index([isVerified])
+  @@index([onlineStatus])
+  @@index([rating])
+}
+
+model CoachService {
+  id          String   @id @default(uuid())
+  coachId     String
+  type        String   // play, voice, video
+  price       Int      // 每局/每30分钟价格
+  unit        String   // round, minute
+  isEnabled   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  coach       CoachProfile @relation(fields: [coachId], references: [id])
+
+  @@unique([coachId, type])
+}
+
+model CoachGame {
+  id          String   @id @default(uuid())
+  coachId     String
+  gameId      String
+  rank        String?  // 段位
+  server      String?  // 服务器
+  isMain      Boolean  @default(false) // 主玩游戏
+  createdAt   DateTime @default(now())
+
+  coach       CoachProfile @relation(fields: [coachId], references: [id])
+  game        Game         @relation(fields: [gameId], references: [id])
+
+  @@unique([coachId, gameId])
+}
+
+// ==================== 游戏相关 ====================
+
+model Game {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  icon        String?
+  cover       String?
+  category    String?  // moba, fps, card, etc.
+  isHot       Boolean  @default(false)
+  sortOrder   Int      @default(0)
+  status      String   @default("active")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  coaches     CoachGame[]
+  orders      Order[]
+
+  @@index([isHot])
+}
+
+// ==================== 订单相关 ====================
+
+model Order {
+  id            String    @id @default(uuid())
+  orderNo       String    @unique
+  userId        String
+  coachId       String
+  gameId        String
+  serviceType   String    // play, voice, video
+  quantity      Int       // 数量
+  unit          String    // round, minute
+  price         Int       // 单价
+  totalPrice    Int       // 总价
+  status        String    @default("pending_payment")
+  // pending_payment, pending_accept, accepted, in_progress, completed, cancelled, refunded
+
+  paymentMethod String?   // balance, wechat, alipay
+  paymentId     String?   // 第三方支付订单号
+  paidAt        DateTime?
+  acceptedAt    DateTime?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  cancelledAt   DateTime?
+  cancelReason  String?
+
+  remark        String?   // 用户备注
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user          User      @relation("UserOrders", fields: [userId], references: [id])
+  coach         User      @relation("CoachOrders", fields: [coachId], references: [id])
+  game          Game      @relation(fields: [gameId], references: [id])
+  review        Review?
+
+  @@index([userId])
+  @@index([coachId])
+  @@index([status])
+  @@index([orderNo])
+}
+
+// ==================== 评价相关 ====================
+
+model Review {
+  id          String   @id @default(uuid())
+  orderId     String   @unique
+  userId      String
+  coachId     String
+  rating      Int      // 1-5
+  content     String?
+  tags        String?  // JSON array: ["准时", "技术好"]
+  images      String?  // JSON array
+  isAnonymous Boolean  @default(false)
+  reply       String?  // 教练回复
+  repliedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  order       Order    @relation(fields: [orderId], references: [id])
+  user        User     @relation("UserReviews", fields: [userId], references: [id])
+  coach       User     @relation("CoachReviews", fields: [coachId], references: [id])
+
+  @@index([coachId])
+}
+
+// ==================== 收藏相关 ====================
+
+model Favorite {
+  id        String   @id @default(uuid())
+  userId    String
+  coachId   String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, coachId])
+}
+
+// ==================== 交易记录 ====================
+
+model Transaction {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String   // recharge, consume, withdraw, refund, reward
+  amount      Int      // 金额（正数入账，负数出账）
+  balance     Int      // 交易后余额
+  description String?
+  relatedId   String?  // 关联的订单ID等
+  status      String   @default("completed")
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([type])
+}
+
+// ==================== 消息相关 ====================
+
+model Message {
+  id          String   @id @default(uuid())
+  senderId    String
+  receiverId  String
+  type        String   @default("text") // text, image, voice, video, system
+  content     String
+  extra       String?  // JSON，附加数据
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  receiver    User     @relation("ReceivedMessages", fields: [receiverId], references: [id])
+
+  @@index([senderId, receiverId])
+  @@index([receiverId, isRead])
+}
+
+// ==================== 验证码 ====================
+
+model VerificationCode {
+  id        String   @id @default(uuid())
+  phone     String
+  code      String
+  type      String   @default("login") // login, bindPhone
+  expiresAt DateTime
+  isUsed    Boolean  @default(false)
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([phone, code])
+}
+
+// ==================== 系统配置 ====================
+
+model SystemConfig {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  value     String
+  remark    String?
+  updatedAt DateTime @updatedAt
+}
