@@ -145,26 +145,35 @@ async function main() {
     });
 
     // 创建教练资料
+    const coachProfileId = uuidv4();
+    const basePrice = 15 + Math.floor(Math.random() * 20);
+    const randomGames = games.sort(() => Math.random() - 0.5).slice(0, 3);
+
     await prisma.coachProfile.upsert({
       where: { userId: coach.id },
       update: {},
       create: {
-        id: uuidv4(),
+        id: coachProfileId,
         userId: coach.id,
         isVerified: true,
         verifiedAt: new Date(),
         rating: 4.5 + Math.random() * 0.5,
+        ratingCount: Math.floor(Math.random() * 200) + 50,
         totalOrders: Math.floor(Math.random() * 500) + 100,
         completedOrders: Math.floor(Math.random() * 400) + 100,
+        orderCount: Math.floor(Math.random() * 400) + 100,
         responseRate: 95 + Math.random() * 5,
         acceptRate: 90 + Math.random() * 10,
         onlineStatus: Math.random() > 0.3 ? 'online' : 'offline',
         isAccepting: true,
+        price: basePrice,
         tags: JSON.stringify(tags),
+        games: JSON.stringify(randomGames.map(g => g.name)),
         images: JSON.stringify([
           `https://picsum.photos/400/500?random=${i + 1}`,
           `https://picsum.photos/400/500?random=${i + 10}`,
         ]),
+        description: `大家好，我是${nickname}，期待和你一起开黑~`,
       },
     });
 
@@ -173,15 +182,15 @@ async function main() {
       data: [
         {
           id: uuidv4(),
-          coachId: coach.id,
+          coachId: coachProfileId,
           type: 'play',
-          price: 15 + Math.floor(Math.random() * 20),
+          price: basePrice,
           unit: 'round',
           isEnabled: true,
         },
         {
           id: uuidv4(),
-          coachId: coach.id,
+          coachId: coachProfileId,
           type: 'voice',
           price: 20 + Math.floor(Math.random() * 30),
           unit: 'minute',
@@ -189,7 +198,7 @@ async function main() {
         },
         {
           id: uuidv4(),
-          coachId: coach.id,
+          coachId: coachProfileId,
           type: 'video',
           price: 50 + Math.floor(Math.random() * 50),
           unit: 'minute',
@@ -200,19 +209,18 @@ async function main() {
     });
 
     // 关联游戏
-    const randomGames = games.sort(() => Math.random() - 0.5).slice(0, 3);
     for (const game of randomGames) {
       await prisma.coachGame.upsert({
         where: {
           coachId_gameId: {
-            coachId: coach.id,
+            coachId: coachProfileId,
             gameId: game.id,
           },
         },
         update: {},
         create: {
           id: uuidv4(),
-          coachId: coach.id,
+          coachId: coachProfileId,
           gameId: game.id,
           rank: ['王者', '星耀', '钻石', '铂金'][Math.floor(Math.random() * 4)],
           isMain: randomGames.indexOf(game) === 0,
