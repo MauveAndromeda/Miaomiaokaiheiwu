@@ -1,6 +1,6 @@
 /**
  * 支付控制器
- * 安全加固版本 - 幂等性检查 + 事务处理
+ * 安全加固版本 - 数据库幂等性 + 事务处理 + 完整充值逻辑
  */
 
 import { Request, Response, NextFunction } from 'express';
@@ -12,19 +12,15 @@ import { alipayService } from '../services/alipay';
 import { generateOrderNo } from '../utils/helpers';
 import { logger } from '../utils/logger';
 
-// 支付回调幂等性缓存（生产环境应使用Redis）
-const processedPayments = new Map<string, { timestamp: number; status: string }>();
-const IDEMPOTENCY_TTL = 24 * 60 * 60 * 1000; // 24小时
-
-// 定期清理过期幂等性记录
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of processedPayments) {
-    if (now - value.timestamp > IDEMPOTENCY_TTL) {
-      processedPayments.delete(key);
-    }
-  }
-}, 60 * 60 * 1000);
+// 充值档位配置
+const RECHARGE_OPTIONS: Record<number, { diamonds: number; bonus: number }> = {
+  6: { diamonds: 60, bonus: 0 },
+  30: { diamonds: 300, bonus: 30 },
+  68: { diamonds: 680, bonus: 100 },
+  128: { diamonds: 1280, bonus: 200 },
+  328: { diamonds: 3280, bonus: 600 },
+  648: { diamonds: 6480, bonus: 1500 },
+};
 
 export class PaymentController {
   /**
@@ -36,6 +32,11 @@ export class PaymentController {
       const { method } = req.body;
       const userId = req.userId!;
 
+      // 输入验证
+      if (!['balance', 'wechat', 'alipay'].includes(method)) {
+        throw new ApiError(400, '不支持的支付方式');
+      }
+
       const order = await prisma.order.findFirst({
         where: {
           id: orderId,
@@ -46,6 +47,11 @@ export class PaymentController {
 
       if (!order) {
         throw new ApiError(400, '订单不存在或已支付');
+      }
+
+      // 金额验证
+      if (order.totalPrice <= 0 || order.totalPrice > 100000) {
+        throw new ApiError(400, '订单金额异常');
       }
 
       // 余额支付 - 使用事务保证原子性
@@ -95,6 +101,8 @@ export class PaymentController {
           });
 
           return { user: updatedUser, order: updatedOrder };
+        }, {
+          timeout: 10000, // 10秒事务超时
         });
 
         logger.info(`余额支付成功: 订单=${order.orderNo}, 用户=${userId}, 金额=${order.totalPrice}`);
@@ -152,37 +160,46 @@ export class PaymentController {
   };
 
   /**
-   * 充值
+   * 充值 - 创建充值订单
    */
   recharge = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
       const { amount, method } = req.body;
       const userId = req.userId!;
 
-      // 充值档位配置
-      const rechargeOptions: Record<number, number> = {
-        6: 60,
-        30: 300,
-        68: 680,
-        128: 1280,
-        328: 3280,
-        648: 6480,
-      };
+      // 输入验证
+      if (!['wechat', 'alipay'].includes(method)) {
+        throw new ApiError(400, '不支持的支付方式');
+      }
 
-      const diamonds = rechargeOptions[amount];
-      if (!diamonds) {
+      const rechargeOption = RECHARGE_OPTIONS[amount];
+      if (!rechargeOption) {
         throw new ApiError(400, '无效的充值金额');
       }
 
       const rechargeOrderNo = `RC${generateOrderNo()}`;
+      const amountInCents = amount * 100; // 转换为分
+
+      // 创建充值订单记录
+      const rechargeOrder = await prisma.rechargeOrder.create({
+        data: {
+          orderNo: rechargeOrderNo,
+          userId,
+          amount: amountInCents,
+          diamonds: rechargeOption.diamonds,
+          bonusDiamonds: rechargeOption.bonus,
+          paymentMethod: method,
+          status: 'pending',
+        },
+      });
 
       // 微信支付
       if (method === 'wechat') {
         const paymentResult = await wechatPayService.createOrder({
-          orderId: rechargeOrderNo,
+          orderId: rechargeOrder.id,
           orderNo: rechargeOrderNo,
-          amount: amount * 100, // 转换为分
-          description: `喵喵开黑屋-充值${diamonds}钻石`,
+          amount: amountInCents,
+          description: `喵喵开黑屋-充值${rechargeOption.diamonds}钻石`,
         });
 
         return res.json({
@@ -190,7 +207,8 @@ export class PaymentController {
           data: {
             paymentMethod: 'wechat',
             rechargeOrderNo,
-            diamonds,
+            diamonds: rechargeOption.diamonds,
+            bonus: rechargeOption.bonus,
             ...paymentResult,
           },
         });
@@ -199,10 +217,10 @@ export class PaymentController {
       // 支付宝
       if (method === 'alipay') {
         const paymentResult = await alipayService.createOrder({
-          orderId: rechargeOrderNo,
+          orderId: rechargeOrder.id,
           orderNo: rechargeOrderNo,
-          amount: amount * 100,
-          subject: `喵喵开黑屋-充值${diamonds}钻石`,
+          amount: amountInCents,
+          subject: `喵喵开黑屋-充值${rechargeOption.diamonds}钻石`,
         });
 
         return res.json({
@@ -210,7 +228,8 @@ export class PaymentController {
           data: {
             paymentMethod: 'alipay',
             rechargeOrderNo,
-            diamonds,
+            diamonds: rechargeOption.diamonds,
+            bonus: rechargeOption.bonus,
             ...paymentResult,
           },
         });
@@ -223,35 +242,31 @@ export class PaymentController {
   };
 
   /**
-   * 微信支付回调 - 包含幂等性检查
+   * 微信支付回调 - 使用数据库幂等性
    */
   wechatNotify = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await wechatPayService.handleNotify(req.body, req.headers);
 
       if (result.success && result.orderId && result.transactionId) {
-        // 幂等性检查
         const idempotencyKey = `wechat_${result.transactionId}`;
-        const processed = processedPayments.get(idempotencyKey);
 
+        // 使用数据库进行幂等性检查
+        const processed = await this.checkAndSetIdempotency(idempotencyKey);
         if (processed) {
           logger.info(`微信支付回调重复处理跳过: ${result.transactionId}`);
           return res.json({ code: 'SUCCESS', message: '成功' });
         }
 
-        // 标记为正在处理
-        processedPayments.set(idempotencyKey, { timestamp: Date.now(), status: 'processing' });
-
         try {
-          await this.handlePaymentSuccess(result.orderId, 'wechat', result.transactionId, result.amount);
-          processedPayments.set(idempotencyKey, { timestamp: Date.now(), status: 'success' });
+          await this.handlePaymentSuccess(result.orderId, 'wechat', result.transactionId);
+          await this.updateIdempotencyStatus(idempotencyKey, 'success');
         } catch (error) {
-          processedPayments.delete(idempotencyKey);
+          await this.updateIdempotencyStatus(idempotencyKey, 'failed', String(error));
           throw error;
         }
       }
 
-      // 返回微信要求的格式
       res.json({ code: 'SUCCESS', message: '成功' });
     } catch (error) {
       logger.error('微信支付回调处理失败:', error);
@@ -260,35 +275,31 @@ export class PaymentController {
   };
 
   /**
-   * 支付宝回调 - 包含幂等性检查
+   * 支付宝回调 - 使用数据库幂等性
    */
   alipayNotify = async (req: Request, res: Response, next: NextFunction) => {
     try {
       const result = await alipayService.handleNotify(req.body);
 
       if (result.success && result.orderId && result.tradeNo) {
-        // 幂等性检查
         const idempotencyKey = `alipay_${result.tradeNo}`;
-        const processed = processedPayments.get(idempotencyKey);
 
+        // 使用数据库进行幂等性检查
+        const processed = await this.checkAndSetIdempotency(idempotencyKey);
         if (processed) {
           logger.info(`支付宝回调重复处理跳过: ${result.tradeNo}`);
           return res.send('success');
         }
 
-        // 标记为正在处理
-        processedPayments.set(idempotencyKey, { timestamp: Date.now(), status: 'processing' });
-
         try {
-          await this.handlePaymentSuccess(result.orderId, 'alipay', result.tradeNo, result.amount);
-          processedPayments.set(idempotencyKey, { timestamp: Date.now(), status: 'success' });
+          await this.handlePaymentSuccess(result.orderId, 'alipay', result.tradeNo);
+          await this.updateIdempotencyStatus(idempotencyKey, 'success');
         } catch (error) {
-          processedPayments.delete(idempotencyKey);
+          await this.updateIdempotencyStatus(idempotencyKey, 'failed', String(error));
           throw error;
         }
       }
 
-      // 返回支付宝要求的格式
       res.send('success');
     } catch (error) {
       logger.error('支付宝回调处理失败:', error);
@@ -334,23 +345,62 @@ export class PaymentController {
   };
 
   /**
+   * 检查幂等性并设置处理中状态
+   * 返回true表示已处理，false表示首次处理
+   */
+  private checkAndSetIdempotency = async (idempotencyKey: string): Promise<boolean> => {
+    try {
+      // 尝试创建幂等性记录，如果已存在会抛出唯一约束错误
+      await prisma.paymentIdempotency.create({
+        data: {
+          idempotencyKey,
+          status: 'processing',
+        },
+      });
+      return false; // 首次处理
+    } catch (error: unknown) {
+      // 唯一约束冲突，说明已经处理过
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        return true;
+      }
+      throw error;
+    }
+  };
+
+  /**
+   * 更新幂等性状态
+   */
+  private updateIdempotencyStatus = async (
+    idempotencyKey: string,
+    status: 'success' | 'failed',
+    result?: string
+  ) => {
+    await prisma.paymentIdempotency.update({
+      where: { idempotencyKey },
+      data: { status, result },
+    });
+  };
+
+  /**
    * 处理支付成功 - 使用事务保证一致性
    */
   private handlePaymentSuccess = async (
     orderId: string,
     paymentMethod: string,
-    paymentId: string,
-    amount?: number
+    paymentId: string
   ) => {
-    // 检查是否是充值订单
-    if (orderId.startsWith('RC')) {
-      await this.handleRechargeSuccess(orderId, paymentMethod, paymentId, amount);
+    // 检查是否是充值订单（通过订单ID查找）
+    const rechargeOrder = await prisma.rechargeOrder.findUnique({
+      where: { id: orderId },
+    });
+
+    if (rechargeOrder) {
+      await this.handleRechargeSuccess(rechargeOrder.orderNo, paymentMethod, paymentId);
       return;
     }
 
-    // 使用事务更新订单状态
+    // 普通订单支付成功处理
     await prisma.$transaction(async (tx) => {
-      // 先检查订单当前状态
       const order = await tx.order.findUnique({
         where: { id: orderId },
       });
@@ -359,13 +409,11 @@ export class PaymentController {
         throw new Error(`订单不存在: ${orderId}`);
       }
 
-      // 只处理待支付状态的订单
       if (order.status !== 'pending_payment') {
         logger.info(`订单已处理，跳过: ${orderId}, 当前状态: ${order.status}`);
         return;
       }
 
-      // 更新订单状态
       await tx.order.update({
         where: { id: orderId },
         data: {
@@ -377,7 +425,7 @@ export class PaymentController {
       });
 
       logger.info(`订单支付成功: ${orderId}, 支付方式: ${paymentMethod}, 交易号: ${paymentId}`);
-    });
+    }, { timeout: 10000 });
   };
 
   /**
@@ -386,28 +434,114 @@ export class PaymentController {
   private handleRechargeSuccess = async (
     rechargeOrderNo: string,
     paymentMethod: string,
-    paymentId: string,
-    amount?: number
+    paymentId: string
   ) => {
-    // 解析充值金额对应的钻石数
-    const rechargeOptions: Record<number, number> = {
-      600: 60,     // 6元
-      3000: 300,   // 30元
-      6800: 680,   // 68元
-      12800: 1280, // 128元
-      32800: 3280, // 328元
-      64800: 6480, // 648元
-    };
+    await prisma.$transaction(async (tx) => {
+      // 查询充值订单
+      const rechargeOrder = await tx.rechargeOrder.findUnique({
+        where: { orderNo: rechargeOrderNo },
+      });
 
-    const diamonds = amount ? rechargeOptions[amount] : undefined;
+      if (!rechargeOrder) {
+        throw new Error(`充值订单不存在: ${rechargeOrderNo}`);
+      }
 
-    if (!diamonds) {
-      logger.error(`无效的充值金额: ${amount}, 订单号: ${rechargeOrderNo}`);
-      return;
+      if (rechargeOrder.status !== 'pending') {
+        logger.info(`充值订单已处理，跳过: ${rechargeOrderNo}, 当前状态: ${rechargeOrder.status}`);
+        return;
+      }
+
+      const totalDiamonds = rechargeOrder.diamonds + rechargeOrder.bonusDiamonds;
+
+      // 1. 更新用户余额
+      const user = await tx.user.update({
+        where: { id: rechargeOrder.userId },
+        data: {
+          balance: { increment: totalDiamonds },
+        },
+      });
+
+      // 2. 创建交易记录
+      await tx.transaction.create({
+        data: {
+          userId: rechargeOrder.userId,
+          type: 'recharge',
+          amount: totalDiamonds,
+          balance: user.balance,
+          description: `充值${rechargeOrder.diamonds}钻石${rechargeOrder.bonusDiamonds > 0 ? `+赠送${rechargeOrder.bonusDiamonds}钻石` : ''}`,
+          relatedId: rechargeOrder.id,
+        },
+      });
+
+      // 3. 更新充值订单状态
+      await tx.rechargeOrder.update({
+        where: { orderNo: rechargeOrderNo },
+        data: {
+          status: 'success',
+          paymentMethod,
+          paymentId,
+          paidAt: new Date(),
+        },
+      });
+
+      logger.info(`充值成功: 订单=${rechargeOrderNo}, 用户=${rechargeOrder.userId}, 钻石=${totalDiamonds}, 交易号=${paymentId}`);
+    }, { timeout: 10000 });
+  };
+
+  /**
+   * 获取充值档位列表
+   */
+  getRechargeOptions = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const options = Object.entries(RECHARGE_OPTIONS).map(([amount, { diamonds, bonus }]) => ({
+        amount: parseInt(amount),
+        diamonds,
+        bonus,
+        isHot: amount === '30',
+      }));
+
+      res.json({
+        success: true,
+        data: options,
+      });
+    } catch (error) {
+      next(error);
     }
+  };
 
-    // TODO: 实现充值逻辑
-    // 这里需要关联用户ID，可能需要在创建充值订单时记录到数据库
-    logger.info(`充值成功: 订单=${rechargeOrderNo}, 钻石=${diamonds}, 交易号=${paymentId}`);
+  /**
+   * 获取充值历史
+   */
+  getRechargeHistory = async (req: AuthRequest, res: Response, next: NextFunction) => {
+    try {
+      const userId = req.userId!;
+      const { page = 1, limit = 20 } = req.query;
+
+      // 输入验证
+      const pageNum = Math.max(1, Math.min(100, Number(page) || 1));
+      const limitNum = Math.max(1, Math.min(50, Number(limit) || 20));
+
+      const [orders, total] = await Promise.all([
+        prisma.rechargeOrder.findMany({
+          where: { userId },
+          orderBy: { createdAt: 'desc' },
+          skip: (pageNum - 1) * limitNum,
+          take: limitNum,
+        }),
+        prisma.rechargeOrder.count({ where: { userId } }),
+      ]);
+
+      res.json({
+        success: true,
+        data: {
+          list: orders,
+          total,
+          page: pageNum,
+          limit: limitNum,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
   };
 }

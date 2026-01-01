@@ -451,11 +451,23 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
     }
 
+    /**
+     * 调用JavaScript方法
+     * 使用JSON序列化防止代码注入
+     */
     fun callJavaScript(method: String, vararg args: Any) {
+        // 验证method名称只包含合法字符（防止代码注入）
+        if (!method.matches(Regex("^[a-zA-Z_][a-zA-Z0-9_.]*$"))) {
+            android.util.Log.w("MainActivity", "Invalid method name: $method")
+            return
+        }
+
         val argsString = args.joinToString(",") {
             when (it) {
-                is String -> "\"$it\""
-                else -> it.toString()
+                is String -> org.json.JSONObject.quote(it) // 使用JSON安全转义
+                is Boolean -> it.toString()
+                is Number -> it.toString()
+                else -> org.json.JSONObject.quote(it.toString())
             }
         }
         val js = "window.$method($argsString)"

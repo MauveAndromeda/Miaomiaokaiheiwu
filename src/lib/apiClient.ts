@@ -33,8 +33,9 @@ const WS_URL = process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:3001';
 const IS_DEV = process.env.NEXT_PUBLIC_ENV === 'development';
 
 // 是否使用Mock数据
-// 设置为true可以直接使用Mock数据进行测试，无需后端
-let USE_MOCK: boolean = process.env.NEXT_PUBLIC_USE_MOCK === 'true' || true; // 默认开启Mock模式
+// 生产环境默认关闭，开发环境可通过环境变量启用
+// 设置 NEXT_PUBLIC_USE_MOCK=true 启用Mock模式
+let USE_MOCK: boolean = process.env.NEXT_PUBLIC_USE_MOCK === 'true';
 
 // ==================== HTTP 客户端 ====================
 

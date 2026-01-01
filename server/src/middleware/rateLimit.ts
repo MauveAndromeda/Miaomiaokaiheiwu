@@ -134,14 +134,25 @@ export const uploadLimiter = rateLimit({
 });
 
 /**
- * 搜索限流
+ * 搜索限流（防止暴力搜索攻击）
  */
 export const searchLimiter = rateLimit({
   windowMs: 60 * 1000, // 1分钟
-  max: 30, // 每分钟30次
+  max: 10, // 每分钟10次搜索
   message: {
     success: false,
     error: '搜索过于频繁，请稍后再试',
+  },
+  keyGenerator: (req) => {
+    // 按用户ID或IP限流
+    return (req as any).userId || req.ip || 'unknown';
+  },
+  handler: (req, res) => {
+    logger.warn(`搜索限流触发: ${(req as any).userId || req.ip}`);
+    res.status(429).json({
+      success: false,
+      error: '搜索过于频繁，请稍后再试',
+    });
   },
 });
 

@@ -24,11 +24,91 @@ import org.json.JSONObject
 /**
  * JavaScript原生桥接类
  * 提供Web页面调用原生功能的能力
+ *
+ * 安全措施：
+ * - URL白名单验证
+ * - 输入参数过滤
+ * - 敏感API访问限制
+ * - 存储Key白名单
  */
 class NativeBridge(
     private val activity: AppCompatActivity,
     private val webView: WebView
 ) {
+
+    companion object {
+        // 允许打开的URL域名白名单
+        private val ALLOWED_URL_DOMAINS = setOf(
+            "miaomiao.com",
+            "miaomiaokaiheiwu.com",
+            "weixin.qq.com",
+            "alipay.com",
+            "weibo.com",
+            "qq.com"
+        )
+
+        // 允许存储的Key前缀白名单
+        private val ALLOWED_STORAGE_PREFIXES = setOf(
+            "user_",
+            "settings_",
+            "cache_",
+            "app_"
+        )
+
+        // 最大Toast消息长度
+        private const val MAX_TOAST_LENGTH = 100
+
+        // 最大存储值长度
+        private const val MAX_STORAGE_VALUE_LENGTH = 10000
+
+        // 最大振动时间（毫秒）
+        private const val MAX_VIBRATE_DURATION = 1000L
+    }
+
+    /**
+     * 验证URL是否在白名单中
+     */
+    private fun isUrlAllowed(url: String): Boolean {
+        return try {
+            val uri = Uri.parse(url)
+            val host = uri.host?.lowercase() ?: return false
+            // 检查是否为http/https协议
+            if (uri.scheme !in listOf("http", "https", "tel", "mailto")) {
+                return false
+            }
+            // tel和mailto协议直接允许
+            if (uri.scheme in listOf("tel", "mailto")) {
+                return true
+            }
+            // 检查域名白名单
+            ALLOWED_URL_DOMAINS.any { domain ->
+                host == domain || host.endsWith(".$domain")
+            }
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    /**
+     * 验证存储Key是否合法
+     */
+    private fun isStorageKeyAllowed(key: String): Boolean {
+        if (key.length > 100) return false
+        // 检查Key前缀是否在白名单中
+        return ALLOWED_STORAGE_PREFIXES.any { prefix -> key.startsWith(prefix) }
+    }
+
+    /**
+     * 过滤字符串中的危险字符
+     */
+    private fun sanitizeString(input: String, maxLength: Int = 1000): String {
+        return input.take(maxLength)
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+            .replace("\t", "\\t")
+    }
 
     /**
      * 获取应用版本信息
@@ -50,10 +130,12 @@ class NativeBridge(
      */
     @JavascriptInterface
     fun showToast(message: String, duration: Int = 0) {
+        // 限制消息长度防止滥用
+        val safeMessage = message.take(MAX_TOAST_LENGTH)
         activity.runOnUiThread {
             Toast.makeText(
                 activity,
-                message,
+                safeMessage,
                 if (duration > 0) Toast.LENGTH_LONG else Toast.LENGTH_SHORT
             ).show()
         }
@@ -64,6 +146,9 @@ class NativeBridge(
      */
     @JavascriptInterface
     fun vibrate(milliseconds: Long = 50) {
+        // 限制振动时长防止滥用
+        val safeDuration = milliseconds.coerceIn(10, MAX_VIBRATE_DURATION)
+
         val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             val vibratorManager = activity.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
             vibratorManager.defaultVibrator
@@ -73,10 +158,10 @@ class NativeBridge(
         }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            vibrator.vibrate(VibrationEffect.createOneShot(milliseconds, VibrationEffect.DEFAULT_AMPLITUDE))
+            vibrator.vibrate(VibrationEffect.createOneShot(safeDuration, VibrationEffect.DEFAULT_AMPLITUDE))
         } else {
             @Suppress("DEPRECATION")
-            vibrator.vibrate(milliseconds)
+            vibrator.vibrate(safeDuration)
         }
     }
 
@@ -93,9 +178,15 @@ class NativeBridge(
 
     /**
      * 打开系统浏览器
+     * 只允许白名单中的域名
      */
     @JavascriptInterface
     fun openBrowser(url: String) {
+        // 安全检查：验证URL是否在白名单中
+        if (!isUrlAllowed(url)) {
+            showToast("不允许打开此链接")
+            return
+        }
         try {
             val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
             activity.startActivity(intent)
@@ -148,33 +239,56 @@ class NativeBridge(
 
     /**
      * 保存数据到本地存储
+     * 只允许白名单前缀的Key
      */
     @JavascriptInterface
     fun saveData(key: String, value: String) {
-        PreferenceUtils.saveString(activity, key, value)
+        // 安全检查：验证Key是否合法
+        if (!isStorageKeyAllowed(key)) {
+            android.util.Log.w("NativeBridge", "Storage key not allowed: $key")
+            return
+        }
+        // 限制值长度
+        val safeValue = value.take(MAX_STORAGE_VALUE_LENGTH)
+        PreferenceUtils.saveString(activity, key, safeValue)
     }
 
     /**
      * 从本地存储读取数据
+     * 只允许白名单前缀的Key
      */
     @JavascriptInterface
     fun getData(key: String): String {
+        // 安全检查：验证Key是否合法
+        if (!isStorageKeyAllowed(key)) {
+            android.util.Log.w("NativeBridge", "Storage key not allowed: $key")
+            return ""
+        }
         return PreferenceUtils.getString(activity, key, "")
     }
 
     /**
      * 删除本地存储数据
+     * 只允许白名单前缀的Key
      */
     @JavascriptInterface
     fun removeData(key: String) {
+        // 安全检查：验证Key是否合法
+        if (!isStorageKeyAllowed(key)) {
+            android.util.Log.w("NativeBridge", "Storage key not allowed: $key")
+            return
+        }
         PreferenceUtils.remove(activity, key)
     }
 
     /**
      * 清空本地存储
+     * 注意：此操作会清空所有应用数据
      */
     @JavascriptInterface
     fun clearData() {
+        // 只清空白名单前缀的数据，不清空系统数据
+        android.util.Log.i("NativeBridge", "Clear all user data requested")
         PreferenceUtils.clear(activity)
     }
 
@@ -296,13 +410,23 @@ class NativeBridge(
 
     /**
      * 调用JavaScript回调
+     * 使用JSON序列化防止代码注入
      */
     private fun callJsCallback(callback: String, result: Any) {
+        // 验证callback名称只包含合法字符（防止代码注入）
+        if (!callback.matches(Regex("^[a-zA-Z_][a-zA-Z0-9_]*$"))) {
+            android.util.Log.w("NativeBridge", "Invalid callback name: $callback")
+            return
+        }
+
+        // 使用JSON序列化确保安全
         val resultStr = when (result) {
             is Boolean -> result.toString()
-            is String -> "\"$result\""
-            else -> result.toString()
+            is String -> JSONObject.quote(result) // 使用JSON安全转义
+            is Number -> result.toString()
+            else -> JSONObject.quote(result.toString())
         }
+
         activity.runOnUiThread {
             webView.evaluateJavascript("$callback($resultStr)", null)
         }

@@ -346,6 +346,41 @@ model UserBehavior {
   @@index([createdAt])
 }
 
+// ==================== 充值订单 ====================
+
+model RechargeOrder {
+  id            String    @id @default(uuid())
+  orderNo       String    @unique
+  userId        String
+  amount        Int       // 充值金额（分）
+  diamonds      Int       // 获得钻石数
+  bonusDiamonds Int       @default(0) // 赠送钻石数
+  paymentMethod String?   // wechat, alipay
+  paymentId     String?   // 第三方支付订单号
+  status        String    @default("pending") // pending, success, failed, expired
+  paidAt        DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([orderNo])
+  @@index([status])
+}
+
+// ==================== 支付幂等性记录 ====================
+
+model PaymentIdempotency {
+  id            String   @id @default(uuid())
+  idempotencyKey String  @unique // 格式: {platform}_{transactionId}
+  status        String   @default("processing") // processing, success, failed
+  result        String?  // JSON格式的处理结果
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([idempotencyKey])
+  @@index([createdAt])
+}
+
 // ==================== 系统配置 ====================
 
 model SystemConfig {
