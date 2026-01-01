@@ -41,6 +41,7 @@ export interface GameTag {
   id: string;
   name: string;
   icon: string;
+  rank?: string;
 }
 
 // 游戏段位
@@ -140,6 +141,7 @@ export interface Banner {
   id: string;
   image: string;
   title: string;
+  subtitle?: string;
   link?: string;
 }
 
