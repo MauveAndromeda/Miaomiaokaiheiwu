@@ -41,7 +41,8 @@ android/local.properties
 android/*.iml
 android/.idea/
 android/captures/
-android/app/src/main/assets/
+android/app/src/main/assets/*
+!android/app/src/main/assets/.gitkeep
 
 # Testing
 coverage/
