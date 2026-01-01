@@ -46,6 +46,12 @@ model User {
   receivedMessages Message[]  @relation("ReceivedMessages")
   devices       UserDevice[]
 
+  // 社交关系
+  followers     Follow[]      @relation("Following")
+  following     Follow[]      @relation("Followers")
+  blocking      Block[]       @relation("Blocker")
+  blockedBy     Block[]       @relation("Blocked")
+
   @@index([phone])
   @@index([isCoach])
 }
@@ -74,27 +80,35 @@ model CoachProfile {
   isVerified      Boolean  @default(false)
   verifiedAt      DateTime?
   rating          Float    @default(5.0)
+  ratingCount     Int      @default(0)
   totalOrders     Int      @default(0)
   completedOrders Int      @default(0)
+  orderCount      Int      @default(0) // 用于推荐算法
   totalEarnings   Int      @default(0)
   responseRate    Float    @default(100)
   acceptRate      Float    @default(100)
   onlineStatus    String   @default("offline") // online, busy, offline
+  lastOnlineAt    DateTime?
   isAccepting     Boolean  @default(true)
   sortOrder       Int      @default(0)
+  price           Int      @default(0) // 基础价格（用于推荐排序）
   tags            String?  // JSON array: ["女神", "声优", "秒回"]
+  games           String?  // JSON array: ["王者荣耀", "和平精英"]
   images          String?  // JSON array of image URLs
   voiceIntro      String?  // 语音介绍URL
+  description     String?  // 个人介绍
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
   user            User     @relation(fields: [userId], references: [id])
   services        CoachService[]
-  games           CoachGame[]
+  coachGames      CoachGame[]
 
   @@index([isVerified])
   @@index([onlineStatus])
   @@index([rating])
+  @@index([orderCount])
+  @@index([price])
 }
 
 model CoachService {
@@ -278,6 +292,60 @@ model VerificationCode {
   @@index([phone, code])
 }
 
+// ==================== 社交关系 ====================
+
+model Follow {
+  id          String   @id @default(uuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("Followers", fields: [followerId], references: [id])
+  following   User     @relation("Following", fields: [followingId], references: [id])
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Friendship {
+  id        String   @id @default(uuid())
+  userId1   String
+  userId2   String
+  createdAt DateTime @default(now())
+
+  @@unique([userId1, userId2])
+  @@index([userId1])
+  @@index([userId2])
+}
+
+model Block {
+  id        String   @id @default(uuid())
+  blockerId String
+  blockedId String
+  createdAt DateTime @default(now())
+
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id])
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id])
+
+  @@unique([blockerId, blockedId])
+}
+
+// ==================== 用户行为追踪 ====================
+
+model UserBehavior {
+  id        String   @id @default(uuid())
+  userId    String
+  action    String   // view, like, share, order, search
+  targetId  String   // 目标ID（如coachId）
+  extra     String?  // JSON附加数据
+  createdAt DateTime @default(now())
+
+  @@index([userId, action])
+  @@index([targetId])
+  @@index([createdAt])
+}
+
 // ==================== 系统配置 ====================
 
 model SystemConfig {
@@ -286,4 +354,21 @@ model SystemConfig {
   value     String
   remark    String?
   updatedAt DateTime @updatedAt
+}
+
+// ==================== 系统通知 ====================
+
+model Notification {
+  id          String   @id @default(uuid())
+  userId      String
+  type        String   // system, order, chat, follow, etc.
+  title       String
+  content     String
+  extra       String?  // JSON
+  isRead      Boolean  @default(false)
+  readAt      DateTime?
+  createdAt   DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([createdAt])
 }
