@@ -13,12 +13,12 @@ import { HomePage } from '@/components/home';
 import { VideoFeed } from '@/components/discover';
 import { LiveList, LiveRoom } from '@/components/live';
 import { MessageList, Chat, VoiceCall, VideoCall } from '@/components/message';
-import { Profile, Settings } from '@/components/profile';
+import { Profile, Settings, Favorites } from '@/components/profile';
 
 // Other Pages
 import { CoachDetail } from '@/components/coach';
-import { OrderCreate, Payment, OrderList, Review } from '@/components/order';
-import { Wallet, Recharge, VIP } from '@/components/wallet';
+import { OrderCreate, Payment, OrderList, OrderDetail, Review } from '@/components/order';
+import { Wallet, Recharge, VIP, Transactions } from '@/components/wallet';
 import { AIAnalysis, AIReport } from '@/components/ai';
 import { Search } from '@/components/search';
 
@@ -79,6 +79,8 @@ function AppContent() {
         return <Payment />;
       case 'orders':
         return <OrderList />;
+      case 'order-detail':
+        return <OrderDetail />;
       case 'review':
         return <Review />;
 
@@ -89,6 +91,8 @@ function AppContent() {
         return <Recharge />;
       case 'vip':
         return <VIP />;
+      case 'transactions':
+        return <Transactions />;
 
       // 消息相关
       case 'chat':
@@ -115,6 +119,10 @@ function AppContent() {
       // 设置
       case 'settings':
         return <Settings />;
+
+      // 收藏
+      case 'favorites':
+        return <Favorites />;
 
       default:
         return <HomePage />;
