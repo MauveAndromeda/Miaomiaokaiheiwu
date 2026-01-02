@@ -29,13 +29,34 @@ jobs:
           NEXT_PUBLIC_USE_MOCK: 'true'
           NEXT_PUBLIC_ENV: 'development'
 
+      - name: Verify Next.js build output
+        run: |
+          echo "=== Checking out/ directory ==="
+          if [ -d "out" ]; then
+            echo "out/ directory exists"
+            ls -la out/
+            echo "=== Checking for index.html ==="
+            if [ -f "out/index.html" ]; then
+              echo "index.html found!"
+              head -20 out/index.html
+            else
+              echo "ERROR: index.html not found in out/"
+              find out -name "*.html" | head -10
+            fi
+          else
+            echo "ERROR: out/ directory does not exist!"
+            ls -la
+          fi
+
       - name: Copy web assets to Android
         run: |
           mkdir -p android/app/src/main/assets/www
           rm -rf android/app/src/main/assets/www/*
           cp -r out/* android/app/src/main/assets/www/
-          echo "Assets copied to www directory:"
+          echo "=== Assets copied to www directory ==="
           ls -la android/app/src/main/assets/www/
+          echo "=== Verifying index.html in assets ==="
+          head -5 android/app/src/main/assets/www/index.html || echo "index.html not found!"
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
