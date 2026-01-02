@@ -29,6 +29,9 @@ jobs:
           NEXT_PUBLIC_USE_MOCK: 'true'
           NEXT_PUBLIC_ENV: 'development'
 
+      - name: Fix asset paths for file:// protocol
+        run: node scripts/fix-paths.js
+
       - name: Verify Next.js build output
         run: |
           echo "=== Checking out/ directory ==="
@@ -38,14 +41,24 @@ jobs:
             echo "=== Checking for index.html ==="
             if [ -f "out/index.html" ]; then
               echo "index.html found!"
-              head -20 out/index.html
+              echo "=== Verifying paths are relative ==="
+              if grep -q '"/_next/' out/index.html; then
+                echo "ERROR: Absolute paths still present!"
+                head -30 out/index.html
+                exit 1
+              else
+                echo "SUCCESS: All paths are relative"
+                head -20 out/index.html
+              fi
             else
               echo "ERROR: index.html not found in out/"
               find out -name "*.html" | head -10
+              exit 1
             fi
           else
             echo "ERROR: out/ directory does not exist!"
             ls -la
+            exit 1
           fi
 
       - name: Copy web assets to Android
