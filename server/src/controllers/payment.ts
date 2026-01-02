@@ -345,23 +345,52 @@ export class PaymentController {
   };
 
   /**
-   * 检查幂等性并设置处理中状态
+   * 检查幂等性并设置处理中状态（原子操作）
+   * 使用upsert确保并发安全，避免竞态条件
    * 返回true表示已处理，false表示首次处理
    */
   private checkAndSetIdempotency = async (idempotencyKey: string): Promise<boolean> => {
     try {
-      // 尝试创建幂等性记录，如果已存在会抛出唯一约束错误
-      await prisma.paymentIdempotency.create({
-        data: {
-          idempotencyKey,
-          status: 'processing',
-        },
+      // 使用upsert实现原子操作
+      // 如果记录存在且状态为success或processing，返回已处理
+      // 如果记录不存在或状态为failed，设置为processing并返回首次处理
+      const result = await prisma.$transaction(async (tx) => {
+        // 先查询现有记录
+        const existing = await tx.paymentIdempotency.findUnique({
+          where: { idempotencyKey },
+        });
+
+        if (existing) {
+          // 如果已成功处理或正在处理中，跳过
+          if (existing.status === 'success' || existing.status === 'processing') {
+            return { alreadyProcessed: true };
+          }
+          // failed状态可以重试，更新为processing
+          await tx.paymentIdempotency.update({
+            where: { idempotencyKey },
+            data: { status: 'processing', updatedAt: new Date() },
+          });
+          return { alreadyProcessed: false };
+        }
+
+        // 创建新记录
+        await tx.paymentIdempotency.create({
+          data: { idempotencyKey, status: 'processing' },
+        });
+        return { alreadyProcessed: false };
+      }, {
+        timeout: 10000,
+        isolationLevel: 'Serializable', // 最高隔离级别防止并发问题
       });
-      return false; // 首次处理
+
+      return result.alreadyProcessed;
     } catch (error: unknown) {
-      // 唯一约束冲突，说明已经处理过
-      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
-        return true;
+      // 处理唯一约束冲突（并发创建时可能发生）
+      if (error && typeof error === 'object' && 'code' in error) {
+        const code = (error as { code: string }).code;
+        if (code === 'P2002') {
+          return true; // 视为已处理
+        }
       }
       throw error;
     }
@@ -425,7 +454,7 @@ export class PaymentController {
       });
 
       logger.info(`订单支付成功: ${orderId}, 支付方式: ${paymentMethod}, 交易号: ${paymentId}`);
-    }, { timeout: 10000 });
+    }, { timeout: 30000 }); // 30秒超时，防止高并发或慢查询
   };
 
   /**
@@ -485,7 +514,7 @@ export class PaymentController {
       });
 
       logger.info(`充值成功: 订单=${rechargeOrderNo}, 用户=${rechargeOrder.userId}, 钻石=${totalDiamonds}, 交易号=${paymentId}`);
-    }, { timeout: 10000 });
+    }, { timeout: 30000 }); // 30秒超时，防止高并发或慢查询
   };
 
   /**

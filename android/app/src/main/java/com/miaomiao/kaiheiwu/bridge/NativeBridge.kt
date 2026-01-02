@@ -410,7 +410,7 @@ class NativeBridge(
 
     /**
      * 调用JavaScript回调
-     * 使用JSON序列化防止代码注入
+     * 使用JSON序列化防止代码注入，增加异常处理防止崩溃
      */
     private fun callJsCallback(callback: String, result: Any) {
         // 验证callback名称只包含合法字符（防止代码注入）
@@ -427,8 +427,27 @@ class NativeBridge(
             else -> JSONObject.quote(result.toString())
         }
 
+        // 使用try-catch包装的安全执行脚本
+        val safeScript = """
+            (function() {
+                try {
+                    if (typeof $callback === 'function') {
+                        $callback($resultStr);
+                    } else {
+                        console.warn('NativeBridge: callback $callback is not a function');
+                    }
+                } catch (e) {
+                    console.error('NativeBridge callback error:', e);
+                }
+            })();
+        """.trimIndent()
+
         activity.runOnUiThread {
-            webView.evaluateJavascript("$callback($resultStr)", null)
+            try {
+                webView.evaluateJavascript(safeScript, null)
+            } catch (e: Exception) {
+                android.util.Log.e("NativeBridge", "Failed to execute JS callback", e)
+            }
         }
     }
 }
