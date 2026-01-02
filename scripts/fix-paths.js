@@ -13,19 +13,24 @@ const outDir = path.join(__dirname, '..', 'out');
 console.log('=== 开始修复资源路径 ===');
 console.log('目录:', outDir);
 
-// 递归查找所有HTML文件
-function findHtmlFiles(dir, files = []) {
+// 递归查找文件
+function findFiles(dir, extensions, files = []) {
   const items = fs.readdirSync(dir);
   for (const item of items) {
     const fullPath = path.join(dir, item);
     const stat = fs.statSync(fullPath);
     if (stat.isDirectory()) {
-      findHtmlFiles(fullPath, files);
-    } else if (item.endsWith('.html')) {
+      findFiles(fullPath, extensions, files);
+    } else if (extensions.some(ext => item.endsWith(ext))) {
       files.push(fullPath);
     }
   }
   return files;
+}
+
+// 递归查找所有HTML文件
+function findHtmlFiles(dir, files = []) {
+  return findFiles(dir, ['.html'], files);
 }
 
 // 修复HTML文件中的路径
@@ -55,6 +60,40 @@ function fixPaths(filePath) {
     return true;
   }
   return false;
+}
+
+// 修复webpack chunk中的公共路径
+function fixWebpackChunks() {
+  const chunksDir = path.join(outDir, '_next', 'static', 'chunks');
+  if (!fs.existsSync(chunksDir)) {
+    console.log('警告: chunks目录不存在，跳过webpack修复');
+    return 0;
+  }
+
+  const jsFiles = findFiles(chunksDir, ['.js']);
+  console.log(`找到 ${jsFiles.length} 个JS文件`);
+
+  let fixedCount = 0;
+  for (const file of jsFiles) {
+    let content = fs.readFileSync(file, 'utf8');
+    const originalContent = content;
+
+    // 修复webpack publicPath: d.p="/_next/" -> d.p="./_next/"
+    // 同时处理可能的变体格式
+    content = content.replace(/\.p="?\/_next\/"?/g, '.p="./_next/"');
+    content = content.replace(/\.p='?\/_next\/'?/g, ".p='./_next/'");
+
+    // 修复其他可能的绝对路径引用
+    content = content.replace(/"?\/_next\/static\//g, '"./_next/static/');
+
+    if (content !== originalContent) {
+      fs.writeFileSync(file, content, 'utf8');
+      console.log('已修复JS:', path.relative(outDir, file));
+      fixedCount++;
+    }
+  }
+
+  return fixedCount;
 }
 
 // 检查并创建manifest.json
@@ -94,33 +133,54 @@ function main() {
     process.exit(1);
   }
 
+  // 修复HTML文件
   const htmlFiles = findHtmlFiles(outDir);
   console.log(`找到 ${htmlFiles.length} 个HTML文件`);
 
-  let fixedCount = 0;
+  let htmlFixedCount = 0;
   for (const file of htmlFiles) {
     if (fixPaths(file)) {
-      fixedCount++;
+      htmlFixedCount++;
     }
   }
 
+  // 修复webpack chunks (关键！)
+  console.log('\n=== 修复webpack chunks ===');
+  const jsFixedCount = fixWebpackChunks();
+
+  // 创建manifest
   createManifest();
 
   console.log(`\n=== 修复完成 ===`);
-  console.log(`共修复 ${fixedCount} 个文件`);
+  console.log(`HTML文件: ${htmlFixedCount} 个`);
+  console.log(`JS文件: ${jsFixedCount} 个`);
 
-  // 验证修复结果
+  // 验证HTML修复结果
   const indexPath = path.join(outDir, 'index.html');
   if (fs.existsSync(indexPath)) {
     const content = fs.readFileSync(indexPath, 'utf8');
     const hasAbsolutePaths = content.includes('"/_next/') || content.includes("'/_next/");
     if (hasAbsolutePaths) {
-      console.error('警告: index.html仍然包含绝对路径!');
+      console.error('错误: index.html仍然包含绝对路径!');
       process.exit(1);
     } else {
-      console.log('验证通过: 所有路径已转换为相对路径');
+      console.log('HTML验证通过: 所有路径已转换为相对路径');
     }
   }
+
+  // 验证webpack修复结果
+  const webpackFiles = findFiles(path.join(outDir, '_next', 'static', 'chunks'), ['.js']);
+  for (const file of webpackFiles) {
+    if (file.includes('webpack')) {
+      const content = fs.readFileSync(file, 'utf8');
+      if (content.includes('.p="/_next/"') || content.includes(".p='/_next/'")) {
+        console.error('错误: webpack文件仍然包含绝对publicPath!');
+        console.error('文件:', path.relative(outDir, file));
+        process.exit(1);
+      }
+    }
+  }
+  console.log('Webpack验证通过: publicPath已转换为相对路径');
 }
 
 main();

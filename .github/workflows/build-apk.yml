@@ -41,14 +41,27 @@ jobs:
             echo "=== Checking for index.html ==="
             if [ -f "out/index.html" ]; then
               echo "index.html found!"
-              echo "=== Verifying paths are relative ==="
+              echo "=== Verifying HTML paths are relative ==="
               if grep -q '"/_next/' out/index.html; then
-                echo "ERROR: Absolute paths still present!"
+                echo "ERROR: Absolute paths still present in HTML!"
                 head -30 out/index.html
                 exit 1
               else
-                echo "SUCCESS: All paths are relative"
-                head -20 out/index.html
+                echo "SUCCESS: HTML paths are relative"
+              fi
+              echo "=== Verifying webpack publicPath ==="
+              WEBPACK_FILE=$(find out/_next/static/chunks -name 'webpack*.js' | head -1)
+              if [ -n "$WEBPACK_FILE" ]; then
+                if grep -q 'd\.p="/_next/"' "$WEBPACK_FILE"; then
+                  echo "ERROR: Webpack publicPath is still absolute!"
+                  grep -o 'd\.p="[^"]*"' "$WEBPACK_FILE"
+                  exit 1
+                else
+                  echo "SUCCESS: Webpack publicPath is relative"
+                  grep -o 'd\.p="[^"]*"' "$WEBPACK_FILE" || echo "publicPath pattern not found (might be different format)"
+                fi
+              else
+                echo "WARNING: webpack file not found"
               fi
             else
               echo "ERROR: index.html not found in out/"
@@ -63,13 +76,18 @@ jobs:
 
       - name: Copy web assets to Android
         run: |
+          echo "=== Cleaning assets directory ==="
+          rm -rf android/app/src/main/assets/web 2>/dev/null || true
           mkdir -p android/app/src/main/assets/www
           rm -rf android/app/src/main/assets/www/*
           cp -r out/* android/app/src/main/assets/www/
           echo "=== Assets copied to www directory ==="
           ls -la android/app/src/main/assets/www/
+          ls -la android/app/src/main/assets/www/_next/static/chunks/ | head -10
           echo "=== Verifying index.html in assets ==="
-          head -5 android/app/src/main/assets/www/index.html || echo "index.html not found!"
+          head -3 android/app/src/main/assets/www/index.html
+          echo "=== Final webpack publicPath check ==="
+          grep -o 'd\.p="[^"]*"' android/app/src/main/assets/www/_next/static/chunks/webpack*.js || echo "No webpack match"
 
       - name: Setup JDK 17
         uses: actions/setup-java@v4
