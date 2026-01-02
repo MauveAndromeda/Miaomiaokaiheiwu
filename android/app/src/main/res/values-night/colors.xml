@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 夜间模式颜色（应用本身是深色主题，保持一致） -->
+
+    <!-- 主色调 -->
+    <color name="primary">#ff6b9d</color>
+    <color name="primary_dark">#c44569</color>
+    <color name="primary_light">#ff8ab1</color>
+
+    <!-- 次色调 -->
+    <color name="secondary">#a855f7</color>
+    <color name="secondary_dark">#7c3aed</color>
+
+    <!-- 背景色 -->
+    <color name="background">#0a0a0f</color>
+    <color name="surface">#1a1a2e</color>
+    <color name="surface_light">#252540</color>
+
+    <!-- 文字颜色 -->
+    <color name="text_primary">#ffffff</color>
+    <color name="text_secondary">#b0b0b0</color>
+    <color name="text_muted">#666666</color>
+
+    <!-- 状态颜色 -->
+    <color name="success">#22c55e</color>
+    <color name="warning">#f59e0b</color>
+    <color name="error">#ef4444</color>
+
+    <!-- 其他 -->
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    <color name="transparent">#00000000</color>
+</resources>

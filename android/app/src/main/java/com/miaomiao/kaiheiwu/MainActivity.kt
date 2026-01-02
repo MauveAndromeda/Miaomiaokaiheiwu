@@ -278,18 +278,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadWebApp() {
-        // 加载本地静态页面（由Next.js导出到assets目录）
-        // 如果assets中没有index.html，显示错误页面
+        // 加载本地静态页面（由Next.js导出到assets/www目录）
         try {
             val assetManager = assets
-            val files = assetManager.list("") ?: emptyArray()
-            if (files.contains("index.html")) {
-                webView.loadUrl("file:///android_asset/index.html")
+            // 检查www目录中是否存在index.html
+            val wwwFiles = assetManager.list("www") ?: emptyArray()
+            if (wwwFiles.contains("index.html")) {
+                // 加载www子目录中的index.html
+                webView.loadUrl("file:///android_asset/www/index.html")
             } else {
-                // assets中没有web文件，显示提示
-                showAssetMissingPage()
+                // 如果www目录不存在，尝试根目录
+                val rootFiles = assetManager.list("") ?: emptyArray()
+                if (rootFiles.contains("index.html")) {
+                    webView.loadUrl("file:///android_asset/index.html")
+                } else {
+                    // assets中没有web文件，显示提示
+                    showAssetMissingPage()
+                }
             }
         } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "加载Web资源失败", e)
             showAssetMissingPage()
         }
     }
