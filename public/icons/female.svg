@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <defs>
+    <linearGradient id="female-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#F472B6"/>
+      <stop offset="100%" style="stop-color:#EC4899"/>
+    </linearGradient>
+  </defs>
+  <circle cx="16" cy="12" r="9" stroke="url(#female-grad)" stroke-width="2.5" fill="none"/>
+  <line x1="16" y1="21" x2="16" y2="30" stroke="url(#female-grad)" stroke-width="2.5" stroke-linecap="round"/>
+  <line x1="11" y1="26" x2="21" y2="26" stroke="url(#female-grad)" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

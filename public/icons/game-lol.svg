@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="lol-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#C89B3C"/>
+      <stop offset="50%" style="stop-color:#785A28"/>
+      <stop offset="100%" style="stop-color:#463714"/>
+    </linearGradient>
+    <linearGradient id="lol-gold" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#F0E6D2"/>
+      <stop offset="100%" style="stop-color:#C8AA6E"/>
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="url(#lol-grad)"/>
+  <path d="M32 12L40 20V28L32 36L24 28V20L32 12Z" fill="url(#lol-gold)"/>
+  <path d="M18 28L26 36V44L18 52V28Z" fill="url(#lol-gold)" opacity="0.8"/>
+  <path d="M46 28L38 36V44L46 52V28Z" fill="url(#lol-gold)" opacity="0.8"/>
+  <circle cx="32" cy="24" r="4" fill="#0AC8B9"/>
+  <path d="M24 48H40L36 52H28L24 48Z" fill="url(#lol-gold)" opacity="0.6"/>
+</svg>

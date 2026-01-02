@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="empty-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1E1E2E;stop-opacity:0.5"/>
+      <stop offset="100%" style="stop-color:#0F0F1A;stop-opacity:0.5"/>
+    </linearGradient>
+    <linearGradient id="empty-cat" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF6B9D"/>
+      <stop offset="100%" style="stop-color:#C44569"/>
+    </linearGradient>
+  </defs>
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="80" fill="url(#empty-bg)"/>
+  <!-- Cute cat face -->
+  <ellipse cx="100" cy="110" rx="40" ry="35" fill="url(#empty-cat)"/>
+  <!-- Ears -->
+  <path d="M65 85L55 55L80 75Z" fill="url(#empty-cat)"/>
+  <path d="M135 85L145 55L120 75Z" fill="url(#empty-cat)"/>
+  <path d="M68 82L60 60L78 76Z" fill="#FFB6C1"/>
+  <path d="M132 82L140 60L122 76Z" fill="#FFB6C1"/>
+  <!-- Eyes (closed/sleepy) -->
+  <path d="M80 105C80 105 85 100 90 105" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+  <path d="M110 105C110 105 115 100 120 105" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round"/>
+  <!-- Nose -->
+  <ellipse cx="100" cy="118" rx="4" ry="3" fill="#FFB6C1"/>
+  <!-- Mouth -->
+  <path d="M92 125C92 125 96 130 100 130C104 130 108 125 108 125" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <!-- Whiskers -->
+  <line x1="60" y1="115" x2="75" y2="112" stroke="#FFFFFF" stroke-width="1.5" opacity="0.6"/>
+  <line x1="60" y1="122" x2="75" y2="122" stroke="#FFFFFF" stroke-width="1.5" opacity="0.6"/>
+  <line x1="140" y1="115" x2="125" y2="112" stroke="#FFFFFF" stroke-width="1.5" opacity="0.6"/>
+  <line x1="140" y1="122" x2="125" y2="122" stroke="#FFFFFF" stroke-width="1.5" opacity="0.6"/>
+  <!-- Zzz sleep marks -->
+  <text x="140" y="70" fill="#A78BFA" font-size="16" font-weight="bold" opacity="0.8">z</text>
+  <text x="150" y="60" fill="#A78BFA" font-size="14" font-weight="bold" opacity="0.6">z</text>
+  <text x="158" y="52" fill="#A78BFA" font-size="12" font-weight="bold" opacity="0.4">z</text>
+</svg>

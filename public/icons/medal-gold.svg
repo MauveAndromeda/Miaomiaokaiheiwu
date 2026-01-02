@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="ribbon-left" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#EF4444"/>
+      <stop offset="100%" style="stop-color:#DC2626"/>
+    </linearGradient>
+    <linearGradient id="ribbon-right" x1="100%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6"/>
+      <stop offset="100%" style="stop-color:#2563EB"/>
+    </linearGradient>
+    <linearGradient id="medal-gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FFD700"/>
+      <stop offset="50%" style="stop-color:#FFA500"/>
+      <stop offset="100%" style="stop-color:#FF8C00"/>
+    </linearGradient>
+    <filter id="medal-shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="2" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+  <!-- Ribbons -->
+  <path d="M22 4L28 24L22 44L16 24L22 4Z" fill="url(#ribbon-left)"/>
+  <path d="M42 4L48 24L42 44L36 24L42 4Z" fill="url(#ribbon-right)"/>
+  <!-- Medal circle -->
+  <circle cx="32" cy="40" r="20" fill="url(#medal-gold)" filter="url(#medal-shadow)"/>
+  <circle cx="32" cy="40" r="16" fill="none" stroke="#FFF5CC" stroke-width="2" opacity="0.5"/>
+  <!-- Number 1 -->
+  <text x="32" y="47" fill="#8B4513" font-size="20" font-weight="bold" text-anchor="middle">1</text>
+  <!-- Star decorations -->
+  <circle cx="22" cy="34" r="2" fill="#FFF5CC"/>
+  <circle cx="42" cy="34" r="2" fill="#FFF5CC"/>
+</svg>
