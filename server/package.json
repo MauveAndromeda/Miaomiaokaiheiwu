@@ -1,7 +1,7 @@
 {
   "name": "miaomiao-server",
   "version": "1.0.0",
-  "description": "喵喵开黑屋后端服务",
+  "description": "喵喵电竞后端服务",
   "main": "dist/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",

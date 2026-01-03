@@ -40,7 +40,7 @@ class NativeBridge(
         // 允许打开的URL域名白名单
         private val ALLOWED_URL_DOMAINS = setOf(
             "miaomiao.com",
-            "miaomiaokaiheiwu.com",
+            "miaomiao-esports.com",
             "weixin.qq.com",
             "alipay.com",
             "weibo.com",

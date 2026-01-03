@@ -101,9 +101,9 @@ function createManifest() {
   const manifestPath = path.join(outDir, 'manifest.json');
   if (!fs.existsSync(manifestPath)) {
     const manifest = {
-      name: '喵喵开黑屋',
-      short_name: '喵喵开黑屋',
-      description: '一起开黑，快乐加倍',
+      name: '喵喵电竞',
+      short_name: '喵喵电竞',
+      description: '喵喵电竞研究所 - 专业电竞技术指导平台',
       start_url: './index.html',
       display: 'standalone',
       background_color: '#0a0a0f',

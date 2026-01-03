@@ -48,7 +48,7 @@ export class SmsService {
         provider: (process.env.SMS_PROVIDER as 'aliyun' | 'tencent') || 'aliyun',
         accessKeyId: process.env.SMS_ACCESS_KEY_ID,
         accessKeySecret: process.env.SMS_ACCESS_KEY_SECRET,
-        signName: process.env.SMS_SIGN_NAME || '喵喵开黑屋',
+        signName: process.env.SMS_SIGN_NAME || '喵喵电竞',
         templateCode: process.env.SMS_TEMPLATE_CODE || '',
         region: process.env.SMS_REGION || 'cn-hangzhou',
       };

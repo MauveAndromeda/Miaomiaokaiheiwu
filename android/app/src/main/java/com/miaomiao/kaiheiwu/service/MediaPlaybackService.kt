@@ -151,7 +151,7 @@ class MediaPlaybackService : Service() {
 
     private fun updateNotification() {
         val isPlaying = player?.isPlaying ?: false
-        val notification = createNotification("喵喵开黑屋", isPlaying)
+        val notification = createNotification("喵喵电竞", isPlaying)
         val notificationManager = getSystemService(NotificationManager::class.java)
         notificationManager.notify(NOTIFICATION_ID, notification)
     }

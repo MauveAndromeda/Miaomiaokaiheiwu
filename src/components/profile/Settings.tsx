@@ -25,7 +25,7 @@ export function Settings() {
         { icon: <Trash2 size={20} />, label: '清除缓存', value: '12.5MB', onClick: () => {
           showToast('缓存已清除', 'success');
         }},
-        { icon: <Info size={20} />, label: '关于我们', onClick: () => showToast('喵喵开黑屋 v1.0.0', 'info') },
+        { icon: <Info size={20} />, label: '关于我们', onClick: () => showToast('喵喵电竞 v1.0.0', 'info') },
         { icon: <FileText size={20} />, label: '用户协议', onClick: () => showToast('功能开发中', 'info') },
         { icon: <FileText size={20} />, label: '隐私政策', onClick: () => showToast('功能开发中', 'info') },
       ],

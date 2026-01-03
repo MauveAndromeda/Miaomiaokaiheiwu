@@ -2,9 +2,9 @@ import type { Metadata, Viewport } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: '喵喵开黑屋 - 电竞技术指导平台',
-  description: '专业电竞技术指导平台，发现认证教练，AI对战分析，助你快速提升',
-  keywords: '电竞指导,游戏教练,王者荣耀,和平精英,英雄联盟,技术提升,AI分析',
+  title: '喵喵电竞 - 电竞技术指导平台',
+  description: '喵喵电竞研究所 - 专业电竞技术指导平台，AI对战分析，认证教练1对1指导',
+  keywords: '喵喵电竞,电竞指导,游戏教练,AI对战分析,王者荣耀,和平精英,英雄联盟',
   manifest: '/manifest.json',
 }
 

@@ -1,11 +1,11 @@
 {
-  "name": "喵喵开黑屋",
-  "short_name": "喵喵开黑屋",
-  "description": "一起开黑，快乐加倍",
+  "name": "喵喵电竞",
+  "short_name": "喵喵电竞",
+  "description": "专业电竞技术指导平台 - 喵喵电竞研究所",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0a0a0f",
-  "theme_color": "#ff6b9d",
+  "theme_color": "#6366f1",
   "orientation": "portrait",
   "icons": [
     {

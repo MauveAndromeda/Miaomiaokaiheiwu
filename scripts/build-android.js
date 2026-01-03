@@ -101,7 +101,7 @@ function formatSize(bytes) {
 }
 
 async function main() {
-  console.log('\n🚀 喵喵开黑屋 - Android 构建脚本\n');
+  console.log('\n🚀 喵喵电竞 - Android 构建脚本\n');
   console.log('='.repeat(50));
 
   try {
@@ -169,7 +169,7 @@ async function main() {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>喵喵开黑屋</title>
+  <title>喵喵电竞</title>
   <script>
     // 重定向到服务器渲染模式
     window.location.href = '${process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000'}';

@@ -63,8 +63,8 @@ export function Login() {
         <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-primary to-secondary rounded-3xl mb-4 shadow-lg">
           <span className="text-4xl">🐱</span>
         </div>
-        <h1 className="text-2xl font-bold text-text-primary">喵喵开黑屋</h1>
-        <p className="text-text-secondary mt-2">电竞技术指导平台</p>
+        <h1 className="text-2xl font-bold text-text-primary">喵喵电竞</h1>
+        <p className="text-text-secondary mt-2">喵喵电竞研究所</p>
       </div>
 
       {/* 登录表单 */}

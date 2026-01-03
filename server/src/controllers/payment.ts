@@ -123,7 +123,7 @@ export class PaymentController {
           orderId: order.id,
           orderNo: order.orderNo,
           amount: order.totalPrice,
-          description: `喵喵开黑屋-订单${order.orderNo}`,
+          description: `喵喵电竞-订单${order.orderNo}`,
         });
 
         return res.json({
@@ -141,7 +141,7 @@ export class PaymentController {
           orderId: order.id,
           orderNo: order.orderNo,
           amount: order.totalPrice,
-          subject: `喵喵开黑屋-订单${order.orderNo}`,
+          subject: `喵喵电竞-订单${order.orderNo}`,
         });
 
         return res.json({
@@ -199,7 +199,7 @@ export class PaymentController {
           orderId: rechargeOrder.id,
           orderNo: rechargeOrderNo,
           amount: amountInCents,
-          description: `喵喵开黑屋-充值${rechargeOption.diamonds}钻石`,
+          description: `喵喵电竞-充值${rechargeOption.diamonds}钻石`,
         });
 
         return res.json({
@@ -220,7 +220,7 @@ export class PaymentController {
           orderId: rechargeOrder.id,
           orderNo: rechargeOrderNo,
           amount: amountInCents,
-          subject: `喵喵开黑屋-充值${rechargeOption.diamonds}钻石`,
+          subject: `喵喵电竞-充值${rechargeOption.diamonds}钻石`,
         });
 
         return res.json({

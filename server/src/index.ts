@@ -1,5 +1,5 @@
 /**
- * 喵喵开黑屋 - 后端服务入口
+ * 喵喵电竞 - 后端服务入口
  * 安全加固版本 - 信任代理 + 请求ID追踪 + CSP + CSRF保护
  */
 
@@ -29,7 +29,7 @@ const httpServer = createServer(app);
 // 生产环境允许的域名
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['https://miaomiaokaiheiwu.com', 'https://www.miaomiaokaiheiwu.com'];
+  : ['https://miaomiao-esports.com', 'https://www.miaomiao-esports.com'];
 
 const io = new SocketServer(httpServer, {
   cors: {

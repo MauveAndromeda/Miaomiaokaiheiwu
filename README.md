@@ -1,8 +1,8 @@
-# 🐱 喵喵开黑屋
+# 🐱 喵喵电竞
 
-专业电竞技术指导平台 Android 应用
+**喵喵电竞研究所** - 专业电竞技术指导平台 Android 应用
 
-> 🎯 专注于帮助玩家提升技术水平，而非单纯的"陪玩"服务
+> 🎯 专注于帮助玩家提升技术水平，AI智能分析 + 认证教练1对1指导
 
 ## 📱 功能特性
 
@@ -67,7 +67,7 @@ cd android
 ## 📦 项目结构
 
 ```
-miaomiao-kaiheiwu/
+miaomiao-esports/
 ├── src/
 │   ├── app/              # Next.js App Router
 │   ├── components/       # React 组件
@@ -105,8 +105,8 @@ miaomiao-kaiheiwu/
 
 ## 📋 版本信息
 
-- **应用名称**: 喵喵开黑屋
-- **包名**: com.miaomiao.kaiheiwu
+- **应用名称**: 喵喵电竞
+- **包名**: com.miaomiao.esports
 - **版本**: 1.0.0
 - **最低 Android 版本**: Android 7.0 (API 24)
 - **目标 Android 版本**: Android 14 (API 34)

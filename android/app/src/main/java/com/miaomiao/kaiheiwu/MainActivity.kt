@@ -331,7 +331,7 @@ class MainActivity : AppCompatActivity() {
             <body>
                 <div class="container">
                     <div class="icon">🐱</div>
-                    <h1>喵喵开黑屋</h1>
+                    <h1>喵喵电竞</h1>
                     <p>Web资源加载中...<br>如持续显示此页面，请重新安装应用</p>
                 </div>
             </body>
