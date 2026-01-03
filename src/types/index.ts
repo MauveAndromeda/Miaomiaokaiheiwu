@@ -241,3 +241,86 @@ export interface Notification {
   isRead: boolean;
   createdAt: string;
 }
+
+// 培训认证相关
+export interface TrainingCourse {
+  id: string;
+  title: string;
+  description: string;
+  duration: number; // 分钟
+  chapters: TrainingChapter[];
+  requiredScore: number;
+  icon: string;
+}
+
+export interface TrainingChapter {
+  id: string;
+  title: string;
+  videoUrl?: string;
+  content: string;
+  quiz?: TrainingQuiz[];
+}
+
+export interface TrainingQuiz {
+  id: string;
+  question: string;
+  options: string[];
+  correctAnswer: number;
+}
+
+export interface CertificationProgress {
+  courseId: string;
+  completedChapters: string[];
+  quizScores: Record<string, number>;
+  status: 'not_started' | 'in_progress' | 'completed' | 'certified';
+  certifiedAt?: string;
+}
+
+// AI对战分析相关
+export interface BattleAnalysis {
+  id: string;
+  gameId: string;
+  gameName: string;
+  matchId: string;
+  analyzedAt: string;
+  duration: number;
+  result: 'win' | 'lose';
+  scores: {
+    overall: number;
+    awareness: number;  // 意识
+    mechanics: number;  // 操作
+    farming: number;    // 发育
+    teamfight: number;  // 团战
+    objectives: number; // 目标控制
+  };
+  keyMoments: KeyMoment[];
+  improvements: string[];
+  heroUsed: string;
+  heroIcon?: string;
+}
+
+export interface KeyMoment {
+  timestamp: number;
+  type: 'highlight' | 'mistake' | 'turning_point';
+  description: string;
+  score: number;
+}
+
+export interface PlayerStats {
+  totalMatches: number;
+  winRate: number;
+  avgScore: number;
+  scoreHistory: { date: string; score: number }[];
+  dimensionTrends: {
+    name: string;
+    current: number;
+    previous: number;
+    trend: 'up' | 'down' | 'stable';
+  }[];
+  topHeroes: {
+    name: string;
+    icon: string;
+    winRate: number;
+    matches: number;
+  }[];
+}

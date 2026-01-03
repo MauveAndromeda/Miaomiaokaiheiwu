@@ -140,7 +140,7 @@ export class RecommendationService {
   }
 
   /**
-   * 计算陪玩推荐分数
+   * 计算教练推荐分数
    */
   private calculateScore(
     coach: any,
@@ -186,7 +186,7 @@ export class RecommendationService {
     const orderScore = Math.min(coach.orderCount / 100, 1) * 10;
     score += orderScore;
     if (coach.orderCount > 50) {
-      reasons.push(`人气陪玩: ${coach.orderCount}单`);
+      reasons.push(`人气教练: ${coach.orderCount}单`);
     }
 
     // 5. 价格匹配度 (权重: 10%)
@@ -209,7 +209,7 @@ export class RecommendationService {
     // 偏好收藏过的
     if (preference.favorites.includes(coach.userId)) {
       score += 2;
-      reasons.push('您收藏的陪玩');
+      reasons.push('您收藏的教练');
     }
 
     return {
@@ -248,7 +248,7 @@ export class RecommendationService {
         where.games = { contains: gameFilter };
       }
 
-      // 排除已下单但未完成的陪玩
+      // 排除已下单但未完成的教练
       const pendingOrders = await prisma.order.findMany({
         where: {
           userId,
@@ -258,7 +258,7 @@ export class RecommendationService {
       });
       const busyCoachIds = pendingOrders.map(o => o.coachId);
 
-      // 获取候选陪玩
+      // 获取候选教练
       const candidates = await prisma.coachProfile.findMany({
         where: {
           ...where,
@@ -317,7 +317,7 @@ export class RecommendationService {
   }
 
   /**
-   * 获取相似陪玩推荐
+   * 获取相似教练推荐
    */
   async getSimilarCoaches(coachId: string, limit: number = 6): Promise<any[]> {
     try {
@@ -336,7 +336,7 @@ export class RecommendationService {
         coachTags = JSON.parse(coach.tags as string);
       } catch {}
 
-      // 查找游戏或标签相似的陪玩
+      // 查找游戏或标签相似的教练
       const similar = await prisma.coachProfile.findMany({
         where: {
           userId: { not: coachId },
@@ -369,13 +369,13 @@ export class RecommendationService {
 
       return sorted.slice(0, limit);
     } catch (error) {
-      logger.error('获取相似陪玩失败:', error);
+      logger.error('获取相似教练失败:', error);
       return [];
     }
   }
 
   /**
-   * 获取热门陪玩
+   * 获取热门教练
    */
   async getPopularCoaches(gameId?: string, limit: number = 10): Promise<any[]> {
     const cacheKey = `popular_${gameId || 'all'}`;
@@ -412,13 +412,13 @@ export class RecommendationService {
 
       return popular;
     } catch (error) {
-      logger.error('获取热门陪玩失败:', error);
+      logger.error('获取热门教练失败:', error);
       return [];
     }
   }
 
   /**
-   * 获取新人陪玩
+   * 获取新人教练
    */
   async getNewCoaches(limit: number = 10): Promise<any[]> {
     try {
@@ -442,7 +442,7 @@ export class RecommendationService {
 
       return newCoaches;
     } catch (error) {
-      logger.error('获取新人陪玩失败:', error);
+      logger.error('获取新人教练失败:', error);
       return [];
     }
   }

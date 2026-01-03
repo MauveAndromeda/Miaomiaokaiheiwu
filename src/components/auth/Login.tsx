@@ -64,7 +64,7 @@ export function Login() {
           <span className="text-4xl">🐱</span>
         </div>
         <h1 className="text-2xl font-bold text-text-primary">喵喵开黑屋</h1>
-        <p className="text-text-secondary mt-2">专业游戏陪玩平台</p>
+        <p className="text-text-secondary mt-2">电竞技术指导平台</p>
       </div>
 
       {/* 登录表单 */}

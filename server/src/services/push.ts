@@ -274,10 +274,10 @@ export class PushService {
   async sendOrderNotification(userId: string, orderStatus: string, orderInfo: any): Promise<void> {
     const statusMessages: Record<string, { title: string; content: string }> = {
       pending: { title: '订单待支付', content: '您的订单已创建，请尽快完成支付' },
-      paid: { title: '支付成功', content: '您的订单已支付成功，等待陪玩接单' },
-      accepted: { title: '订单已接单', content: '陪玩已接受您的订单，即将开始服务' },
-      in_progress: { title: '服务进行中', content: '您的陪玩服务已开始' },
-      completed: { title: '服务完成', content: '本次陪玩服务已完成，欢迎评价' },
+      paid: { title: '支付成功', content: '您的订单已支付成功，等待教练接单' },
+      accepted: { title: '订单已接单', content: '教练已接受您的订单，即将开始指导' },
+      in_progress: { title: '指导进行中', content: '您的电竞指导服务已开始' },
+      completed: { title: '指导完成', content: '本次指导服务已完成，欢迎评价' },
       cancelled: { title: '订单已取消', content: '您的订单已取消' },
       refunded: { title: '退款成功', content: '您的订单已成功退款' },
     };

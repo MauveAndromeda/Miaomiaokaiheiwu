@@ -132,7 +132,7 @@ export function Review() {
           <Card>
             <h3 className="font-semibold text-text-primary mb-3">文字评价（选填）</h3>
             <Textarea
-              placeholder="分享你的陪玩体验..."
+              placeholder="分享你的指导体验..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
               maxLength={200}

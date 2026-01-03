@@ -432,9 +432,9 @@ export const orders: Order[] = [
 // 热门搜索
 export const hotSearches = [
   '王者荣耀',
-  '女神陪玩',
-  '上分',
+  '认证教练',
+  'AI战术分析',
   '和平精英',
-  '声音好听',
-  '代练',
+  '技术指导',
+  '段位提升',
 ];
